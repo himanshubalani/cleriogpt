@@ -73,15 +73,19 @@ export function AppSidebar() {
     className="font-semibold tracking-tight"
     render={<Link href="/" />}
     >
-    <span className="flex size-8 items-center justify-center overflow-hidden rounded-lg bg-primary">
+    <span className="flex size-8 items-center justify-center">
     <Image
-    src="/clerio logo mark.png"
+    src="/clerio-logo-mark.png"
     alt="Clerio"
-    width={24}
-    height={24}
+    width={28}
+    height={28}
     className="object-contain"
     priority
     />
+    </span>
+    
+    <span className="group-data-[collapsible=icon]:hidden">
+    ClerioGPT
     </span>
     </SidebarMenuButton>
     </SidebarMenuItem>
