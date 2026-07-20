@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "@teispace/next-themes"
 
 /**
- * Wraps the app with `next-themes` for light/dark/system theme switching.
+ * Wraps the app with `teispace/next-themes
+` for light/dark/system theme switching.
  */
 export function ThemeProvider({
   children,

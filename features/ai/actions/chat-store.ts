@@ -1,71 +1,92 @@
+// features/ai/actions/chat-store.ts
 "use server";
 
 import { isTextUIPart, type UIMessage } from "ai";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
-/** Extracts plain text from an AI SDK `UIMessage` by joining all text parts. */
 function getMessageText(message: UIMessage) {
   return message.parts.filter(isTextUIPart).map((part) => part.text).join("");
 }
 
-/**
- * Normalizes stored message parts from the database into AI SDK `UIMessage` parts.
- * Falls back to a single text part when no structured parts are stored.
- */
-function toUIMessageParts(
-  parts: Prisma.JsonValue | null,
-  content: string
-): UIMessage["parts"] {
+function toUIMessageParts(parts: Prisma.JsonValue | null, content: string): UIMessage["parts"] {
   const stored = parts as UIMessage["parts"] | null;
-  if (Array.isArray(stored) && stored.length > 0) {
-    return stored;
-  }
-
+  if (Array.isArray(stored) && stored.length > 0) return stored;
   return [{ type: "text", text: content }];
 }
 
-/**
- * Loads all messages for a conversation from the database as AI SDK `UIMessage`s.
- *
- * @param conversationId - The conversation whose messages to load.
- * @returns Messages ordered oldest to newest, ready for `useChat`.
- */
-export async function loadChatMessages(
-  conversationId: string
-): Promise<UIMessage[]> {
-  const rows = await prisma.message.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "asc" },
-  });
+export async function loadChatMessages(conversationId: string): Promise<UIMessage[]> {
+  let currentId: string | null = conversationId;
+  const lineage: { convId: string; upToMsgId: string | null }[] = [];
 
-  return rows.map((row) => ({
+  // Trace back to the root of the conversation tree
+  while (currentId) {
+    const conv = await prisma.conversation.findUnique({
+      where: { id: currentId },
+      select: { id: true, forkedFromId: true, forkedFromMessageId: true }
+    });
+    if (!conv) break;
+    lineage.unshift({ convId: conv.id, upToMsgId: conv.forkedFromMessageId });
+    currentId = conv.forkedFromId;
+  }
+
+  const allMessages = [];
+
+  // Reconstruct the history from root to current leaf
+  for (const part of lineage) {
+    if (part.upToMsgId) {
+      const boundaryMsg = await prisma.message.findUnique({
+        where: { id: part.upToMsgId },
+        select: { createdAt: true }
+      });
+      if (boundaryMsg) {
+        const msgs = await prisma.message.findMany({
+          where: {
+            conversationId: part.convId,
+            createdAt: { lte: boundaryMsg.createdAt }
+          },
+          orderBy: { createdAt: "asc" }
+        });
+        allMessages.push(...msgs);
+      }
+    } else {
+      const msgs = await prisma.message.findMany({
+        where: { conversationId: part.convId },
+        orderBy: { createdAt: "asc" }
+      });
+      allMessages.push(...msgs);
+    }
+  }
+
+  // Deduplicate in case of exact timestamp boundary overlaps
+  const uniqueMsgs = Array.from(new Map(allMessages.map(m => [m.id, m])).values());
+
+  return uniqueMsgs.map((row) => ({
     id: row.id,
     role: row.role === "ASSISTANT" ? "assistant" : "user",
     parts: toUIMessageParts(row.parts, row.content),
   }));
 }
 
-type SaveChatMessagesOptions = {
-  updateTitle?: boolean;
-};
-
-/**
- * Upserts AI SDK `UIMessage`s into the database for a conversation.
- *
- * @param conversationId - Target conversation ID.
- * @param messages - Messages to persist (system messages are skipped).
- * @param options.updateTitle - When true, auto-titles "New Chat" from the first user message.
- */
 export async function saveChatMessages(
   conversationId: string,
   messages: UIMessage[],
-  options: SaveChatMessagesOptions = {}
+  options: { updateTitle?: boolean } = {}
 ) {
   const { updateTitle = true } = options;
 
   for (const message of messages) {
     if (message.role === "system") continue;
+
+    // VERY IMPORTANT: Prevent modifying historical messages belonging to a parent branch
+    const existing = await prisma.message.findUnique({
+      where: { id: message.id },
+      select: { conversationId: true }
+    });
+
+    if (existing && existing.conversationId !== conversationId) {
+      continue; 
+    }
 
     const content = getMessageText(message);
     const role = message.role === "assistant" ? "ASSISTANT" : "USER";
@@ -100,8 +121,7 @@ export async function saveChatMessages(
     where: { id: conversationId },
     data: {
       lastMessageAt: new Date(),
-      title:
-        updateTitle && conversation.title === "New Chat" && firstUserText
+      title: updateTitle && conversation.title === "New Chat" && firstUserText
           ? firstUserText.slice(0, 48)
           : conversation.title,
     },

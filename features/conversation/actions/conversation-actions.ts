@@ -13,6 +13,7 @@ export type ConversationListItem = {
     lastMessageAt: Date;
     createdAt: Date;
     updatedAt: Date;
+    rootId: string | null;
 };
 
 
@@ -131,4 +132,29 @@ export async function deleteConversation(conversationId: string) {
 
     revalidatePath("/");
     return { id: conversationId };
+}
+
+/**
+ * Forks an existing conversation from a specific message point.
+ */
+export async function createBranch(conversationId: string, messageId: string) {
+    const user = await requireUser();
+    
+    const current = await assertOwnsConversation(conversationId, user.id);
+
+    // If current conversation is already a branch, share the same root
+    const rootIdToUse = current.rootId || current.id;
+
+    const newBranch = await prisma.conversation.create({
+        data: {
+            userId: user.id,
+            title: `Branch of ${current.title}`,
+            rootId: rootIdToUse,
+            forkedFromId: current.id,
+            forkedFromMessageId: messageId,
+        }
+    });
+
+    revalidatePath("/");
+    return newBranch.id;
 }

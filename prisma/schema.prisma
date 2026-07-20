@@ -29,13 +29,23 @@ model Conversation {
   id            String   @id @default(cuid())
   userId        String
   title         String   @default("New Chat")
-  model         String? // e.g. openai/gpt-4.1 — per-thread model override
+  model         String?  // e.g. openai/gpt-4.1 — per-thread model override
   systemPrompt  String?  @db.Text
   isPinned      Boolean  @default(false)
   isArchived    Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastMessageAt DateTime @default(now())
+
+  rootId              String?
+  forkedFromId        String?
+  forkedFromMessageId String?
+
+  root       Conversation?  @relation("ConversationRoots", fields: [rootId], references: [id])
+  branches   Conversation[] @relation("ConversationRoots")
+
+  forkedFrom Conversation?  @relation("ConversationForks", fields: [forkedFromId], references: [id])
+  forks      Conversation[] @relation("ConversationForks")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
