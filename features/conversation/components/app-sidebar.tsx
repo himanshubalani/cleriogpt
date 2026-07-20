@@ -75,7 +75,7 @@ export function AppSidebar() {
               <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm text-primary-foreground">
                 C
               </span>
-              <span>ChaiGPT</span>
+              <span>ClerioGPT</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
