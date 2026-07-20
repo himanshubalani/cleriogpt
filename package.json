@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "check": "tsc --noEmit && eslint . && next build"
+    "check": "tsc --noEmit && eslint . && next build",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.16",
@@ -29,6 +30,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
