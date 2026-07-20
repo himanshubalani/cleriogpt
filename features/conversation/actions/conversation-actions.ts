@@ -67,6 +67,7 @@ export async function listConversations(): Promise<ConversationListItem[]> {
             lastMessageAt: true,
             createdAt: true,
             updatedAt: true,
+            rootId: true,
         },
     })
 }

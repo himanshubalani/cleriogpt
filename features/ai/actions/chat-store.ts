@@ -19,9 +19,15 @@ export async function loadChatMessages(conversationId: string): Promise<UIMessag
   let currentId: string | null = conversationId;
   const lineage: { convId: string; upToMsgId: string | null }[] = [];
 
+  
+
   // Trace back to the root of the conversation tree
   while (currentId) {
-    const conv = await prisma.conversation.findUnique({
+    const conv: {
+      id: string;
+      forkedFromId: string | null;
+      forkedFromMessageId: string | null;
+    } | null = await prisma.conversation.findUnique({
       where: { id: currentId },
       select: { id: true, forkedFromId: true, forkedFromMessageId: true }
     });

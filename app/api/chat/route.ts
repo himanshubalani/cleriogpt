@@ -10,7 +10,8 @@ import {
     streamText, 
     toUIMessageStream, 
     type UIMessage,
-    tool 
+    tool, 
+    stepCountIs
 } from "ai";
 import { z } from "zod";
 
@@ -45,11 +46,11 @@ export async function POST(req: Request) {
         model: getChatModel(conversation.model),
         system: conversation.systemPrompt ?? "You are ClerioGPT, an advanced AI assistant. You MUST use the webSearch tool when asked about real-time information, news, weather, or facts you don't know.",
         messages: await convertToModelMessages(messages),
-        maxSteps: 5, // Important: Allows the LLM to call a tool, read the result, and then reply!
+        stopWhen: stepCountIs(5),
         tools: {
             webSearch: tool({
                 description: "Search the web for up-to-date and factual information.",
-                parameters: z.object({
+                 inputSchema: z.object({
                     query: z.string().describe("The search query to execute."),
                 }),
                 execute: async ({ query }) => {

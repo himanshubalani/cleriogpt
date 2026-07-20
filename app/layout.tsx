@@ -20,7 +20,13 @@ const geistMono = Geist_Mono({
 /** Next.js root layout metadata (title and description). */
 export const metadata: Metadata = {
   title: "ClerioGPT",
-  description: "Advanced AI Assistant with Web Search and Branching",
+  description: "Advanced AI Assistant, ask anything",
+  openGraph: {
+    images: [
+      "og-image.webp"
+    ]
+  }
+
 };
 
 /**

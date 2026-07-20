@@ -60,7 +60,7 @@ export const ConversationView = ({ conversationId, initialMessages }: Conversati
                 {/* Branch Switcher Dropdown */}
                 {relatedBranches.length > 1 && (
                    <DropdownMenu>
-                     <DropdownMenuTrigger asChild>
+                     <DropdownMenuTrigger>
                        <Button variant="outline" size="sm" className="ml-auto flex items-center gap-2 h-8">
                          <GitForkIcon className="size-3" />
                          Branches ({relatedBranches.length})
@@ -69,7 +69,7 @@ export const ConversationView = ({ conversationId, initialMessages }: Conversati
                      </DropdownMenuTrigger>
                      <DropdownMenuContent align="end" className="w-56">
                        {relatedBranches.map(branch => (
-                         <DropdownMenuItem key={branch.id} asChild>
+                         <DropdownMenuItem key={branch.id}>
                            <Link href={`/c/${branch.id}`} className="flex items-center justify-between w-full">
                              <span className="truncate">{branch.title}</span>
                              {branch.id === conversationId && <CheckIcon className="size-4 ml-2" />}
