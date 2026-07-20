@@ -19,14 +19,38 @@ const geistMono = Geist_Mono({
 
 /** Next.js root layout metadata (title and description). */
 export const metadata: Metadata = {
-  title: "ClerioGPT",
-  description: "Advanced AI Assistant, ask anything",
+  metadataBase: new URL("https://gpt.askclerio.dev"),
+  title: {
+    default: "ClerioGPT",
+    template: "%s | ClerioGPT",
+  },
+  description: "Advanced AI Assistant featuring real-time web search.",
+  keywords: ["AI", "Chatbot", "ClerioGPT", "Next.js", "OpenAI", "Tavily"],
   openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://gpt.askclerio.dev",
+    title: "ClerioGPT - Advanced AI Assistant",
+    description: "Experience seamless conversation with real-time agentic web search.",
+    siteName: "ClerioGPT",
     images: [
-      "og-image.webp"
-    ]
-  }
-
+      {
+        url: "/og-image.webp",
+        width: 1200,
+        height: 630,
+        alt: "ClerioGPT Image",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ClerioGPT - Advanced AI Assistant",
+    description: "Experience seamless conversation branching and real-time agentic web search.",
+    images: ["/og-image.webp"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 /**
