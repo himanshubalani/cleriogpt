@@ -3,8 +3,8 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { isTextUIPart, type ChatStatus, type UIMessage } from "ai";
-import { GitForkIcon, Loader2Icon, CheckCircle2Icon } from "lucide-react";
+import { type ChatStatus, type UIMessage } from "ai";
+import { GitForkIcon } from "lucide-react";
 import { createBranch } from "@/features/conversation/actions/conversation-actions";
 
 import {
@@ -38,7 +38,7 @@ export function ChatMessages({ messages, status, conversationId }: ChatMessagesP
         toast.success("Timeline branched successfully!");
         router.push(`/c/${newId}`);
       } catch (err) {
-        toast.error("Failed to create branch");
+        toast.error(`Failed to create branch - ${err}`);
       }
     });
   };
@@ -50,7 +50,12 @@ export function ChatMessages({ messages, status, conversationId }: ChatMessagesP
           <Message key={message.id} from={message.role}>
             <MessageContent>
                {/* Your existing tool / text rendering logic from Phase 1 goes here */}
-               <MessageResponse>{message.parts.filter(p => p.type === "text").map(p => (p as any).text).join("")}</MessageResponse>
+               <MessageResponse>
+  {message.parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("")}
+</MessageResponse>
             </MessageContent>
             
             <MessageActions 

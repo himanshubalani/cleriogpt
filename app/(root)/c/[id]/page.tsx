@@ -14,9 +14,10 @@ type ConversationPageProps = {
 const page = async({params}:ConversationPageProps) => {
     const {id} = await params;
 
-    try {
+     try {
       await getConversation(id)
-    } catch (error) {
+    } catch (_error) {
+      console.log(_error)
       notFound()
     }
 

@@ -2,7 +2,7 @@ import { loadChatMessages, saveChatMessages } from "@/features/ai/actions/chat-s
 import { getChatModel } from "@/features/ai/utils/model";
 import { requireUser } from "@/features/auth/action/require-user";
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { 
     convertToModelMessages, 
     createIdGenerator, 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
         model: getChatModel(conversation.model),
-        system: conversation.systemPrompt ?? "You are ClerioGPT, an advanced AI assistant. You MUST use the webSearch tool when asked about real-time information, news, weather, or facts you don't know.",
+        system: conversation.systemPrompt ?? `You are ClerioGPT, an advanced AI assistant. You MUST use the webSearch tool when asked about real-time information, news, weather, or facts you don't know. The name of the person you are talking to is  ${user.firstName} ${user.lastName}`,
         messages: await convertToModelMessages(messages),
         stopWhen: stepCountIs(5),
         tools: {
@@ -69,8 +69,8 @@ export async function POST(req: Request) {
                         })
                     });
                     
-                    const data = await res.json();
-                    return data.results.map((r: any) => ({
+                     const data = await res.json();
+                    return data.results.map((r: { title: string; url: string; content: string }) => ({
                         title: r.title,
                         url: r.url,
                         content: r.content

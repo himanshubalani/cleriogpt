@@ -2,7 +2,6 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-import type { User } from "@/lib/generated/prisma/client";
 
 /**
  * Syncs the signed-in Clerk user into the local Prisma `User` table (upsert).
