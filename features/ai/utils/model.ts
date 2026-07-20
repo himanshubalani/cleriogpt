@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 
 /** Default OpenAI model used when a conversation has no model override. */
-export const DEFAULT_CHAT_MODEL = "gpt-4o-mini";
+export const DEFAULT_CHAT_MODEL = "gpt-5.4-mini";
 
 /**
  * Returns an OpenAI language model instance for chat completions.

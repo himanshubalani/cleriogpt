@@ -3,13 +3,17 @@ import { getChatModel } from "@/features/ai/utils/model";
 import { requireUser } from "@/features/auth/action/require-user";
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { convertToModelMessages, createIdGenerator, createUIMessageStream, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
-/**
- * POST /api/chat — Streams an AI assistant reply for a conversation.
- *
- * Validates auth and ownership, persists the user message, then streams the
- * assistant response via the AI SDK. Final messages are saved when the stream ends.
- */
+import { 
+    convertToModelMessages, 
+    createIdGenerator, 
+    createUIMessageStreamResponse, 
+    streamText, 
+    toUIMessageStream, 
+    type UIMessage,
+    tool 
+} from "ai";
+import { z } from "zod";
+
 export async function POST(req: Request) {
     await auth.protect();
 
@@ -22,10 +26,7 @@ export async function POST(req: Request) {
     const user = await requireUser();
 
     const conversation = await prisma.conversation.findFirst({
-        where: {
-            id,
-            userId: user.id
-        }
+        where: { id, userId: user.id }
     });
 
     if (!conversation) {
@@ -33,38 +34,65 @@ export async function POST(req: Request) {
     }
 
     const previousMessages = await loadChatMessages(id);
-
-    const alreadySaved = previousMessages.some(
-        (storedMessage)=>storedMessage.id === message.id
-    )
-
+    const alreadySaved = previousMessages.some((stored) => stored.id === message.id);
     const messages = alreadySaved ? previousMessages : [...previousMessages, message];
 
-    if(!alreadySaved){
+    if (!alreadySaved) {
         await saveChatMessages(id, [message]);
     }
 
-    const result =  streamText({
+    const result = streamText({
         model: getChatModel(conversation.model),
-        system: conversation.systemPrompt ?? "You are ClerioGPT, a helpful and intelligent assistant.",
+        system: conversation.systemPrompt ?? "You are ClerioGPT, an advanced AI assistant. You MUST use the webSearch tool when asked about real-time information, news, weather, or facts you don't know.",
         messages: await convertToModelMessages(messages),
+        maxSteps: 5, // Important: Allows the LLM to call a tool, read the result, and then reply!
+        tools: {
+            webSearch: tool({
+                description: "Search the web for up-to-date and factual information.",
+                parameters: z.object({
+                    query: z.string().describe("The search query to execute."),
+                }),
+                execute: async ({ query }) => {
+                    const apiKey = process.env.TAVILY_API_KEY;
+                    if (!apiKey) return "Search API key is missing. Tell the user search is disabled.";
+                    
+                    const res = await fetch("https://api.tavily.com/search", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            api_key: apiKey,
+                            query: query,
+                            search_depth: "basic",
+                            include_answer: false,
+                            max_results: 3
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    return data.results.map((r: any) => ({
+                        title: r.title,
+                        url: r.url,
+                        content: r.content
+                    }));
+                }
+            })
+        }
     });
 
-    result.consumeStream();
-
     return createUIMessageStreamResponse({
-        stream:toUIMessageStream({
-           stream:result.stream,
-           originalMessages:messages,
-           generateMessageId:createIdGenerator({prefix:"msg" , size:16}),
-           onEnd:async({messages:finalMessages})=>{
+        stream: toUIMessageStream({
+           stream: result.stream,
+           originalMessages: messages,
+           generateMessageId: createIdGenerator({ prefix: "msg", size: 16 }),
+           onEnd: async ({ messages: finalMessages }) => {
             try {
-                await saveChatMessages(id , finalMessages , {updateTitle:false})
+                // Because we save "parts" as JSON in chat-store.ts, 
+                // Prisma automatically persists the tool calls and results!
+                await saveChatMessages(id, finalMessages, { updateTitle: false })
             } catch (error) {
-                console.error(error);
+                console.error("Failed to save final messages:", error);
             }
            }
         })
-    })
-
+    });
 }
