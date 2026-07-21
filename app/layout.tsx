@@ -7,6 +7,8 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ClerkProvider } from "@clerk/nextjs"
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
+import { Analytics } from "@vercel/analytics/next"
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,7 +39,7 @@ export const metadata: Metadata = {
       {
         url: "/og-image.webp",
         width: 1200,
-        height: 630,
+        height: 675,
         alt: "ClerioGPT Image",
       },
     ],
@@ -80,6 +82,7 @@ export default function RootLayout({
             </ThemeProvider>
           </QueryProvider>
         </ClerkProvider>
+        <Analytics/>
       </body>
     </html>
   );
