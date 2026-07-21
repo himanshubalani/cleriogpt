@@ -1,14 +1,17 @@
-import { startNewChat } from '@/features/home/actions/start-new-chat'
-import { redirect } from 'next/navigation'
+import { ConversationView } from '@/features/conversation/components/conversation-view';
+import { generateId } from 'ai';
 
-/**
- * Home page — creates a new chat and redirects to `/c/{id}`.
- */
-const page = async() => {
-  const conversationId = await startNewChat()
+const page = async () => {
+  // Generate a temporary ID. It won't be saved to the DB until a message is sent.
+  const id = generateId();
   
-  
-  redirect(`/c/${conversationId}`)
+  return (
+    <ConversationView
+      key={id} 
+      conversationId={id} 
+      initialMessages={[]} 
+    />
+  )
 }
 
 export default page

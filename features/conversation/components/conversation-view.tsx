@@ -6,6 +6,7 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useChat } from "@ai-sdk/react"
 import React, { useMemo } from 'react'
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation'; // <-- Import router and pathname
 import { useConversations } from '../hooks/use-conversation';
 import { queryKeys } from '../utils/query-keys';
 import { toast } from 'sonner';
@@ -22,9 +23,12 @@ type ConversationViewProps = {
 };
 
 export const ConversationView = ({ conversationId, initialMessages }: ConversationViewProps) => {
-
     const queryClient = useQueryClient();
     const { data: conversations } = useConversations();
+    
+    // --> Add hooks for navigation
+    const router = useRouter();
+    const pathname = usePathname();
 
     const transport = useMemo(() => new DefaultChatTransport({
         api: "/api/chat",
@@ -43,10 +47,17 @@ export const ConversationView = ({ conversationId, initialMessages }: Conversati
         onError: (error) => toast.error(error.message),
     });
 
+    // --> Handle conditional route switching when the first message is sent
+    React.useEffect(() => {
+        if (pathname === "/" && messages.length > 0) {
+            router.replace(`/c/${conversationId}`);
+        }
+    }, [messages.length, pathname, conversationId, router]);
+
+
     const currentConv = conversations?.find((item) => item.id === conversationId);
-    const title = currentConv?.title ?? "Chat";
+    const title = currentConv?.title ?? "New Chat";
     
-    // Find all branches sharing the same root!
     const rootId = currentConv?.rootId || currentConv?.id;
     const relatedBranches = conversations?.filter(c => (c.rootId || c.id) === rootId) || [];
 
@@ -57,7 +68,6 @@ export const ConversationView = ({ conversationId, initialMessages }: Conversati
                 <Separator orientation="vertical" className="mx-1 h-4" />
                 <h1 className="truncate text-sm font-medium">{title}</h1>
                 
-                {/* Branch Switcher Dropdown */}
                 {relatedBranches.length > 1 && (
                    <DropdownMenu>
                      <DropdownMenuTrigger>

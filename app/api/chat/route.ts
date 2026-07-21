@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         });
     }
 
-    const releaseLock = async () => {
+const releaseLock = async () => {
         try {
             await redis.del(lockKey);
         } catch (error) {
@@ -67,13 +67,19 @@ export async function POST(req: Request) {
         }
     };
     
-    const conversation = await prisma.conversation.findFirst({
+    let conversation = await prisma.conversation.findFirst({
         where: { id, userId: user.id }
     });
     
+    // --> Automatically create the conversation on-the-fly if it doesn't exist
     if (!conversation) {
-        await releaseLock();
-        return new Response("Conversation not found", { status: 404 });
+        conversation = await prisma.conversation.create({
+            data: {
+                id,
+                userId: user.id,
+                title: "New Chat" // The title will be overwritten by saveChatMessages shortly
+            }
+        });
     }
     
     const previousMessages = await loadChatMessages(id);
