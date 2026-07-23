@@ -1,12 +1,14 @@
 // features/conversation/components/chat-messages.tsx
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { type ChatStatus, type UIMessage } from "ai";
-import { GitForkIcon, CopyIcon } from "lucide-react";
+import { GitForkIcon, CopyIcon, CheckIcon, Loader2Icon } from "lucide-react";
 import { createBranch } from "@/features/conversation/actions/conversation-actions";
+import { CopyMessageButton } from "@/components/ui/copy-message";
+
 
 import {
   Conversation,
@@ -31,7 +33,7 @@ export function ChatMessages({ messages, status, conversationId }: ChatMessagesP
   const isWaiting = status === "submitted" && messages.at(-1)?.role === "user";
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-
+  
   const handleBranch = (messageId: string) => {
     startTransition(async () => {
       try {
@@ -43,64 +45,56 @@ export function ChatMessages({ messages, status, conversationId }: ChatMessagesP
       }
     });
   };
-
-  const handleCopy = (message: UIMessage) => {
-    const text = message.parts
-      .filter((p) => p.type === "text")
-      // @ts-ignore - safe because we already filtered by type === "text"
-      .map((p) => p.text)
-      .join("");
-      
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard!");
-  };
-
+  
   return (
     <Conversation>
-      <ConversationContent className="py-6">
-        {messages.map((message) => (
-          <Message key={message.id} from={message.role}>
-            <MessageContent>
-               <MessageResponse>
-                  {message.parts
-                    .filter((p) => p.type === "text")
-                    // @ts-ignore
-                    .map((p) => p.text)
-                    .join("")}
-                </MessageResponse>
-            </MessageContent>
+    <ConversationContent className="py-6">
+    {messages.map((message) => (
+      <Message key={message.id} from={message.role}>
+      <MessageContent>
+      <MessageResponse>
+      {message.parts
+        .filter((p) => p.type === "text")
+        // @ts-ignore
+        .map((p) => p.text)
+        .join("")}
+        </MessageResponse>
+        </MessageContent>
+        
+        <MessageActions 
+        className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 ${
+          message.role === "user" ? "justify-end" : "justify-start"
+          }`}
+          >
+          <CopyMessageButton
+          text={message.parts
+            .filter((p) => p.type === "text")
+            // @ts-ignore
+            .map((p) => p.text)
+            .join("")}
+            />
             
-            <MessageActions 
-              className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
+            
+            <MessageAction 
+            tooltip="Branch from this message" 
+            onClick={() => handleBranch(message.id)}
+            disabled={isPending}
             >
-              <MessageAction 
-                 tooltip="Copy message" 
-                 onClick={() => handleCopy(message)}
-              >
-                <CopyIcon className="size-4" />
-              </MessageAction>
-
-              <MessageAction 
-                 tooltip="Branch from this message" 
-                 onClick={() => handleBranch(message.id)}
-                 disabled={isPending}
-              >
-                <GitForkIcon className="size-4" />
-              </MessageAction>
+            <GitForkIcon className="size-4" />
+            </MessageAction>
             </MessageActions>
-          </Message>
-        ))}
-
-        {isWaiting && (
-          <Message from="assistant">
+            </Message>
+          ))}
+          
+          {isWaiting && (
+            <Message from="assistant">
             <MessageContent>
-              <Loader />
+            <Loader />
             </MessageContent>
-          </Message>
-        )}
-      </ConversationContent>
-    </Conversation>
-  );
-}
+            </Message>
+          )}
+          </ConversationContent>
+          </Conversation>
+        );
+      }
+      

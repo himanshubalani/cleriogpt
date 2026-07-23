@@ -87,6 +87,8 @@ export const MessageActions = ({
 export type MessageActionProps = ComponentProps<typeof Button> & {
   tooltip?: string;
   label?: string;
+  tooltipOpen?: boolean;
+  onTooltipOpenChange?: (open: boolean) => void;
 };
 
 /** Icon button for message actions (copy, regenerate, etc.) with optional tooltip. */
@@ -96,6 +98,8 @@ export const MessageAction = ({
   label,
   variant = "ghost",
   size = "icon-sm",
+  tooltipOpen,
+  onTooltipOpenChange,
   ...props
 }: MessageActionProps) => {
   const button = (
@@ -105,20 +109,25 @@ export const MessageAction = ({
     </Button>
   );
 
-  if (tooltip) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>{button}</TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+  if (!tooltip) {
+    return button;
   }
 
-  return button;
+  return (
+    <TooltipProvider>
+      <Tooltip
+        open={tooltipOpen}
+        onOpenChange={onTooltipOpenChange}
+      >
+        <TooltipTrigger asChild>
+          {button}
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 };
 
 interface MessageBranchContextType {
