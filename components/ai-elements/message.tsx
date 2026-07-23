@@ -119,7 +119,7 @@ export const MessageAction = ({
         open={tooltipOpen}
         onOpenChange={onTooltipOpenChange}
       >
-        <TooltipTrigger asChild>
+        <TooltipTrigger>
           {button}
         </TooltipTrigger>
         <TooltipContent>
